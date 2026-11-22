@@ -1,0 +1,96 @@
+name: Play Store screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ ci ]
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    name: ${{ matrix.profile }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { profile: compact, width: 720, height: 1280, density: 320, rotation: 0 }
+          - { profile: phone, width: 1080, height: 1920, density: 420, rotation: 0 }
+          - { profile: tablet7, width: 1024, height: 600, density: 160, rotation: 1 }
+          - { profile: tablet10, width: 1280, height: 800, density: 160, rotation: 1 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: |
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Capture ${{ matrix.profile }}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+            -camera-back none -camera-front none -no-snapshot
+          script: |
+            adb shell wm size ${{ matrix.width }}x${{ matrix.height }}
+            adb shell wm density ${{ matrix.density }}
+            adb shell settings put system accelerometer_rotation 0
+            adb shell settings put system user_rotation ${{ matrix.rotation }}
+            adb shell am force-stop com.studyapp.pomodoro || true
+            ./gradlew :app:connectedDebugAndroidTest \
+              -Pandroid.testInstrumentationRunnerArguments.class=com.studyapp.pomodoro.PlayStoreScreenshotTest \
+              -Pandroid.testInstrumentationRunnerArguments.screenshotProfile=${{ matrix.profile }} \
+              -Pandroid.testInstrumentationRunnerArguments.screenshotOrientation=${{ matrix.rotation == 1 && 'landscape' || 'portrait' }} \
+              --stacktrace --console=plain
+            mkdir -p screenshots/${{ matrix.profile }}
+            adb pull /sdcard/Android/data/com.studyapp.pomodoro/files/screenshots/${{ matrix.profile }}/. screenshots/${{ matrix.profile }}/ || true
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playstore-${{ matrix.profile }}
+          path: screenshots/${{ matrix.profile }}/**
+          if-no-files-found: warn
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playstore-${{ matrix.profile }}-reports
+          path: |
+            app/build/reports/androidTests/**
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: ignore

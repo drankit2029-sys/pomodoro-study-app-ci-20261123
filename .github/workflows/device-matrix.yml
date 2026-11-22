@@ -1,0 +1,105 @@
+name: Device & orientation matrix
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ ci ]
+
+permissions:
+  contents: read
+
+jobs:
+  device:
+    name: API ${{ matrix.api }} · ${{ matrix.profile }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 33, 36]
+        include:
+          - { profile: compact, width: 720, height: 1280, density: 320, rotation: 0 }
+          - { profile: phone_landscape, width: 1920, height: 1080, density: 420, rotation: 1 }
+          - { profile: foldable_square, width: 1200, height: 1200, density: 320, rotation: 0 }
+          - { profile: tablet7_landscape, width: 1024, height: 600, density: 160, rotation: 1 }
+          - { profile: tablet10_landscape, width: 1280, height: 800, density: 160, rotation: 1 }
+          - { profile: tablet10_portrait, width: 800, height: 1280, density: 160, rotation: 0 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: |
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Run suites on ${{ matrix.profile }}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+            -camera-back none -camera-front none -no-snapshot
+          script: |
+            adb shell wm size ${{ matrix.width }}x${{ matrix.height }}
+            adb shell wm density ${{ matrix.density }}
+            adb shell settings put system accelerometer_rotation 0
+            adb shell settings put system user_rotation ${{ matrix.rotation }}
+            adb shell am force-stop com.studyapp.pomodoro || true
+            ./gradlew :app:connectedDebugAndroidTest \
+              -Pandroid.testInstrumentationRunnerArguments.class=com.studyapp.pomodoro.FeatureCoverageTest,com.studyapp.pomodoro.RuthlessFeatureTest,com.studyapp.pomodoro.LayoutIntegrityTest \
+              -Pandroid.testInstrumentationRunnerArguments.longRunning=false \
+              --stacktrace --console=plain
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-${{ matrix.api }}-${{ matrix.profile }}-reports
+          path: |
+            app/build/reports/androidTests/**
+            app/build/outputs/androidTest-results/**
+            app/build/outputs/connected_android_test_additional_output/**
+          if-no-files-found: ignore
+
+      - name: Upload logcat
+        if: failure()
+        run: |
+          adb logcat -d > logcat-device-${{ matrix.api }}-${{ matrix.profile }}.txt || true
+          adb shell dumpsys activity > dumpsys-device-${{ matrix.api }}-${{ matrix.profile }}.txt || true
+
+      - name: Upload logcat artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-${{ matrix.api }}-${{ matrix.profile }}-logcat
+          path: |
+            logcat-device-${{ matrix.api }}-${{ matrix.profile }}.txt
+            dumpsys-device-${{ matrix.api }}-${{ matrix.profile }}.txt
+          if-no-files-found: ignore
