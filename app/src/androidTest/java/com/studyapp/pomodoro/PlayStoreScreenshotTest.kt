@@ -4,10 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -58,7 +56,7 @@ class PlayStoreScreenshotTest {
     private val state get() = engine.state.value
 
     private val profile: String by lazy {
-        instrumentation.arguments.getString("screenshotProfile")
+        InstrumentationRegistry.getArguments().getString("screenshotProfile")
             ?: when {
                 context.resources.configuration.smallestScreenWidthDp >= 600 -> "tablet"
                 context.resources.configuration.screenWidthDp < 390 -> "compact"
@@ -86,7 +84,7 @@ class PlayStoreScreenshotTest {
         enableAccessibilityService()
         resetAll()
         device.wakeUp()
-        val orientation = instrumentation.arguments.getString("screenshotOrientation")
+        val orientation = InstrumentationRegistry.getArguments().getString("screenshotOrientation")
             ?: if (profile.startsWith("tablet")) "landscape" else "portrait"
         if (orientation == "landscape") {
             device.setOrientationLandscape()
@@ -314,7 +312,7 @@ class PlayStoreScreenshotTest {
         }.onFailure { failures += "21_landscape: ${it.message}" }
 
         // Restore the profile orientation.
-        val orientation = instrumentation.arguments.getString("screenshotOrientation")
+        val orientation = InstrumentationRegistry.getArguments().getString("screenshotOrientation")
             ?: if (profile.startsWith("tablet")) "landscape" else "portrait"
         if (orientation == "landscape") {
             device.setOrientationLandscape()
@@ -409,13 +407,13 @@ class PlayStoreScreenshotTest {
 
     private fun resetAll() {
         instrumentation.runOnMainSync {
-            FullscreenVideoAdManager.dismissFallbackAd()
+            // Clear an Advanced Focus lock first; disabling Advanced Focus while locked is a no-op.
+            engine.reset(force = true)
             engine.setAdvancedFocusEnabled(false)
             engine.setAdvancedFocusConfirmVisible(false)
             engine.setFocusModeActive(false, force = true)
             engine.stopAlarm()
             engine.selectAmbientSoundscape(AmbientSoundscape.OFF)
-            engine.reset(force = true)
             engine.dismissCompletion()
             engine.selectPhase(Phase.Focus)
             engine.updateSetting(Phase.Focus, 25)

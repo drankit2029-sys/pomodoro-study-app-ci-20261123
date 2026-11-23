@@ -253,7 +253,7 @@ class PomodoroTimerService : Service() {
             "com.studyapp.pomodoro.extra.STARTED_AS_FOREGROUND"
 
         private const val MAX_WAKE_LOCK_MILLIS = 2L * 60L * 60L * 1000L
-        private const val STOP_GRACE_MILLIS = 1_000L
+        private const val STOP_GRACE_MILLIS = 3_000L
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(
