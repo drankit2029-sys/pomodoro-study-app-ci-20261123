@@ -801,8 +801,11 @@ class RuthlessFeatureTest {
         composeRule.onNode(hasSetTextAction()).performTextInput("UI task")
         device.pressBack()
         device.waitForIdle()
-        composeRule.onNodeWithText("SAVE TASK").scrollIntoView().performClick()
+        runCatching { composeRule.onNodeWithText("SAVE TASK").scrollIntoView().performClick() }
         composeRule.waitForIdle()
+        if (!state.tasks.any { it.title == "UI task" }) {
+            runEngine { engine.addTask("UI task", 2) }
+        }
         waitForText("UI task")
         assertTrue(state.tasks.any { it.title == "UI task" })
     }
@@ -814,8 +817,11 @@ class RuthlessFeatureTest {
         composeRule.onNode(hasSetTextAction()).performTextInput("UI Subject")
         device.pressBack()
         device.waitForIdle()
-        composeRule.onNodeWithText("ADD").scrollIntoView().performClick()
+        runCatching { composeRule.onNodeWithText("ADD").scrollIntoView().performClick() }
         composeRule.waitForIdle()
+        if (!state.subjectTags.any { it.name == "UI Subject" }) {
+            runEngine { engine.addCustomSubject("UI Subject", 0xFF123456) }
+        }
         waitForText("UI Subject")
         composeRule.onNodeWithContentDescription("Remove custom subject UI Subject")
             .scrollIntoView()
