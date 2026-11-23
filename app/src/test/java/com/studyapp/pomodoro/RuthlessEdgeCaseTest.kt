@@ -857,7 +857,7 @@ class RuthlessEdgeCaseTest {
         )
         assertTrue(paused.isAdvancedFocusLocked)
 
-        val focusOff = running.copy(isFocusModeActive = false)
+        val focusOff = running.copy(isFocusModeActive = false, isAppPinned = false)
         assertFalse(focusOff.isAdvancedFocusLocked)
         assertTrue(focusOff.canToggleFocusMode)
     }
