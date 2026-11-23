@@ -103,8 +103,8 @@ jobs:
       - name: Upload logcat
         if: failure()
         run: |
-          adb logcat -d > logcat-device-${{ matrix.api }}-${{ matrix.profile }}.txt || true
-          adb shell dumpsys activity > dumpsys-device-${{ matrix.api }}-${{ matrix.profile }}.txt || true
+          timeout 30 adb logcat -d > logcat-device-${{ matrix.api }}-${{ matrix.profile }}.txt || true
+          timeout 30 adb shell dumpsys activity > dumpsys-device-${{ matrix.api }}-${{ matrix.profile }}.txt || true
 
       - name: Upload logcat artifact
         if: failure()
