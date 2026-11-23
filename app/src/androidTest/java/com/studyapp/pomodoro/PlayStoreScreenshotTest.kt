@@ -346,7 +346,7 @@ class PlayStoreScreenshotTest {
             composeRule.waitForIdle()
             waitForText("AccessibilityService API Disclosure")
             capture("23_permission_disclosure", "AccessibilityService API prominent disclosure")
-            clickText("Decline")
+            composeRule.onNode(hasText("Decline") and hasClickAction()).performClick()
             enableAccessibilityService()
         }.onFailure { failures += "23_permission_disclosure: ${it.message}" }
 
