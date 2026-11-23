@@ -241,9 +241,8 @@ class PomodoroTimerEngine private constructor(context: Context) {
         }
         PomodoroNotifications.cancelCompletion(appContext)
         persistState()
-        if (shouldStopService) {
-            PomodoroTimerService.stop(appContext)
-        }
+        // The service's state collector stops itself when the timer is idle. Stopping it
+        // here can cancel an in-flight startForegroundService() and crash the process.
         NativeAdCache.onUserAction()
         syncAuxiliarySystems()
     }
@@ -276,7 +275,6 @@ class PomodoroTimerEngine private constructor(context: Context) {
         }
         PomodoroNotifications.cancelCompletion(appContext)
         persistState()
-        PomodoroTimerService.stop(appContext)
         NativeAdCache.onUserAction()
         syncAuxiliarySystems()
     }
@@ -1337,7 +1335,6 @@ class PomodoroTimerEngine private constructor(context: Context) {
         if (ringAlarm) {
             PomodoroAlarmPlayer.play(appContext, finishedState.alarm)
         }
-        PomodoroTimerService.stop(appContext)
         NativeAdCache.onUserAction()
         syncAuxiliarySystems()
     }
