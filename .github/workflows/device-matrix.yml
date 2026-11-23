@@ -76,7 +76,7 @@ jobs:
             adb shell settings put system accelerometer_rotation 0
             adb shell settings put system user_rotation ${{ matrix.rotation }}
             adb shell am force-stop com.studyapp.pomodoro || true
-            ./gradlew :app:connectedDebugAndroidTest \
+            ./gradlew :app:connectedDebugAndroidTest -PnativeAdsEnabled=false \
               -Pandroid.testInstrumentationRunnerArguments.class=com.studyapp.pomodoro.FeatureCoverageTest,com.studyapp.pomodoro.RuthlessFeatureTest,com.studyapp.pomodoro.LayoutIntegrityTest \
               -Pandroid.testInstrumentationRunnerArguments.longRunning=false \
               --stacktrace --console=plain

@@ -179,7 +179,7 @@ run_api() {
 }
 
 log "Building debug + androidTest APKs"
-nice -n 10 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain \
+nice -n 10 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest -PnativeAdsEnabled=false --console=plain \
     > "$OUT/build.log" 2>&1
 if [ $? -ne 0 ]; then
     log "Build failed; see $OUT/build.log"

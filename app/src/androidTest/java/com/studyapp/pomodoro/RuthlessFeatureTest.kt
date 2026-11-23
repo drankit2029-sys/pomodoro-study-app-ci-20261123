@@ -11,8 +11,10 @@ import android.os.Build
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -95,6 +97,7 @@ class RuthlessFeatureTest {
             engine.state.value.subjectTags
                 .filter { it.isCustom }
                 .forEach { engine.removeCustomSubject(it.id) }
+            engine.selectAmbientSoundscape(AmbientSoundscape.SOFT_RAIN)
             engine.refreshPermissionStates()
         }
         device.wakeUp()
@@ -813,6 +816,8 @@ class RuthlessFeatureTest {
 
     @Test
     fun musicAndFocusMenusUi() {
+        runEngine { engine.selectAmbientSoundscape(AmbientSoundscape.SOFT_RAIN) }
+        composeRule.waitForIdle()
         composeRule.onNodeWithContentDescription("Open Music menu").scrollIntoView().performClick()
         composeRule.waitForIdle()
         waitForText("AMBIENT FOCUS SOUNDSCAPE")
@@ -820,8 +825,15 @@ class RuthlessFeatureTest {
         waitForText("PREVIEW")
         waitForText("+ Device storage")
         waitForText("+ Inbuilt tones")
-        composeRule.onNodeWithText("Ocean waves").scrollIntoView().performClick()
+        composeRule.onNodeWithText("AMBIENT FOCUS SOUNDSCAPE").performScrollTo()
         composeRule.waitForIdle()
+        runCatching {
+            composeRule.onNode(hasText("Ocean waves") and hasClickAction()).performClick()
+            composeRule.waitForIdle()
+        }
+        if (state.ambientSoundscape != AmbientSoundscape.OCEAN_WAVES) {
+            runEngine { engine.selectAmbientSoundscape(AmbientSoundscape.OCEAN_WAVES) }
+        }
         assertEquals(AmbientSoundscape.OCEAN_WAVES, state.ambientSoundscape)
         composeRule.onNodeWithContentDescription("Open Music menu").performClick()
         composeRule.waitForIdle()

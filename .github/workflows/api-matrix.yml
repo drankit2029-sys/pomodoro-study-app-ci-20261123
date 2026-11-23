@@ -75,7 +75,7 @@ jobs:
             -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
             -camera-back none -camera-front none -no-snapshot
           script: |
-            ./gradlew :app:connectedDebugAndroidTest \
+            ./gradlew :app:connectedDebugAndroidTest -PnativeAdsEnabled=false \
               -Pandroid.testInstrumentationRunnerArguments.class=com.studyapp.pomodoro.FeatureCoverageTest,com.studyapp.pomodoro.RuthlessFeatureTest \
               -Pandroid.testInstrumentationRunnerArguments.longRunning=false \
               --stacktrace --console=plain
