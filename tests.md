@@ -110,8 +110,8 @@ Status legend: ⏳ pending · 🟡 running · ✅ passed · ❌ failed · ⚠️
 
 | Run | Scope | Environment | Status | Notes |
 |-----|-------|-------------|--------|-------|
-| A1 | JVM unit tests + lint | VM | ⏳ | |
-| A2 | Debug build | VM | ⏳ | |
+| A1 | JVM unit tests + lint | VM | ✅ | 106 tests, 0 failures; lint 0 errors (68 warnings, 1 hint) |
+| A2 | Debug build + androidTest APK | VM | ✅ | `assembleDebug` + `assembleDebugAndroidTest` green |
 | B1 | FeatureCoverageTest | VM API 26/28/30/33/35/36 | ⏳ | |
 | B2 | RuthlessFeatureTest | VM API 26/28/30/33/35/36 | ⏳ | |
 | B3 | LayoutIntegrityTest | VM 12 profiles × 6 APIs | ⏳ | |
@@ -121,17 +121,23 @@ Status legend: ⏳ pending · 🟡 running · ✅ passed · ❌ failed · ⚠️
 | D2 | All-feature screenshots | VM 4 classes | ⏳ | |
 | E1 | Manual visual review | Orchestrator | ⏳ | |
 
+CI repository: <https://github.com/drankit2029-sys/pomodoro-study-app-ci-20261123>
+
 ---
 
 ## 6. Findings / risks
 
 _Updated as tests run._
 
+- **FIXED — duration steppers stayed enabled while paused mid-session.** `PomodoroUiState.canAdjustDuration` only checked `!isRunning`, while `PomodoroTimerEngine.updateSetting` also rejects `isMidSession`. The UI therefore offered a no-op +/− control after pausing. Fixed to `!isAdvancedFocusLocked && !isRunning && !isMidSession`; covered by `RuthlessEdgeCaseTest.runningAndPausedUiStateDerivations` and `RuthlessFeatureTest.durationBoundsClampAtEveryPhase`.
 - **Strict mode idle lock (suspected UX inconsistency):** `isFocusExitBlocked` is true whenever Focus Mode is on with `STRICT`, even before a timer starts. The UI copy says leaving is blocked "until the session ends". Ruthless test `strictModeIdleNavigation` documents the actual behaviour; decide whether to gate strict blocking on `isTimerSessionActive`.
 - **Accessibility permission on CI:** `MainActivity.onResume` clears Focus Mode when Accessibility is not granted. Instrumented focus tests must enable the service via `settings put secure enabled_accessibility_services` first.
 - **Ads on emulators:** debug builds use Google test ad units; UMP may show a consent form on first launch. Screenshot runs dismiss it and use the no-ad path.
 - **API 26/27 emulator images:** x86 only; GitHub Actions must use `arch: x86` for those levels.
 - **`local.properties` contains production AdMob IDs and keystore passwords** — it is git-ignored and must never be pushed to the temporary public repo.
+- **Gradle wrapper network timeout:** the default 10 s was too short on the VM; raised to 60 s. The VM session also pre-populated the wrapper cache.
+- **`gradlew` executable bit:** the source copy was `0644`; CI initially failed with `Permission denied`. Fixed to `0755` in the repo and workflows.
+- **Initial ruthless run:** 5 failures were a mix of one real app bug (`canAdjustDuration`) and four over-strict test expectations (intensity cap floor, zero-entry ledger filtering, idle `canReset`, `isAppPinned` copy). All resolved; 106/106 green.
 
 ---
 

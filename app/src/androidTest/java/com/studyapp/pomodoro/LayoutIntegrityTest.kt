@@ -5,7 +5,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -124,17 +123,19 @@ class LayoutIntegrityTest {
     fun taskAndSubjectInputsAreReachable() {
         composeRule.onNodeWithText("+ ADD TASK").scrollIntoView().performClick()
         composeRule.waitForIdle()
-        val taskField = composeRule.onNode(hasSetTextAction())
-            .fetchSemanticsNode().boundsInRoot
-        assertTrue("Task input must have a usable height", taskField.height > 20f)
+        val taskFieldNode = composeRule.onNode(hasSetTextAction())
+        runCatching { taskFieldNode.performScrollTo() }
+        val taskField = taskFieldNode.fetchSemanticsNode().boundsInRoot
+        assertTrue("Task input must have a usable height: $taskField", taskField.height > 20f)
         composeRule.onNodeWithText("CLOSE").performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("+ SUBJECT").scrollIntoView().performClick()
         composeRule.waitForIdle()
-        val subjectField = composeRule.onNode(hasSetTextAction())
-            .fetchSemanticsNode().boundsInRoot
-        assertTrue("Subject input must have a usable height", subjectField.height > 20f)
+        val subjectFieldNode = composeRule.onNode(hasSetTextAction())
+        runCatching { subjectFieldNode.performScrollTo() }
+        val subjectField = subjectFieldNode.fetchSemanticsNode().boundsInRoot
+        assertTrue("Subject input must have a usable height: $subjectField", subjectField.height > 20f)
         composeRule.onNodeWithText("CLOSE").performClick()
         composeRule.waitForIdle()
     }

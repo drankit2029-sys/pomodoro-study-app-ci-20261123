@@ -24,7 +24,7 @@ ADB="$ANDROID_HOME/platform-tools/adb"
 EMULATOR="$ANDROID_HOME/emulator/emulator"
 
 API="${API:-36}"
-AVD="${AVD:-k3d-api${API}}"
+AVD="${AVD:-study-api36}"
 PORT="${PORT:-5620}"
 SERIAL="emulator-$PORT"
 OUT="${OUT:-screenshots}"
@@ -90,7 +90,7 @@ trap release EXIT
 
 log "Starting $AVD on $SERIAL"
 nice -n 10 "$EMULATOR" -avd "$AVD" -port "$PORT" \
-    -no-window -no-audio -no-boot-anim -no-snapshot \
+    -no-window -no-audio -no-boot-anim -no-snapshot -read-only \
     -gpu swiftshader_indirect -camera-back none -camera-front none \
     -memory 2048 -cores 2 -no-metrics \
     > "$OUT/emulator.log" 2>&1 &

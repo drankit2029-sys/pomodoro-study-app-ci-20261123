@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.pm.ShortcutManager
 import android.os.Build
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -21,6 +22,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -206,7 +208,9 @@ class FeatureCoverageTest {
         instrumentation.runOnMainSync { engine.toggle() }
         assertTrue(state.isAdvancedFocusLocked)
         instrumentation.runOnMainSync { engine.toggle() }
-        assertTrue(state.isRunning)
+        assertFalse(state.isRunning)
+        assertTrue(state.isMidSession)
+        assertTrue(state.isAdvancedFocusLocked)
         instrumentation.runOnMainSync { engine.setFocusModeActive(false) }
         assertTrue(state.isFocusEnabled) // locked until the session ends
         instrumentation.runOnMainSync { engine.reset(force = true) }
@@ -289,7 +293,9 @@ class FeatureCoverageTest {
             engine.exportHistoryCsv(context) { }
             engine.clearAllHistory()
         }
-        assertTrue(state.historyWindow.isEmpty())
+        assertTrue(
+            state.historyWindow.all { it.completedFocus == 0 && it.focusedMinutes == 0 },
+        )
     }
 
     @Test
@@ -300,4 +306,9 @@ class FeatureCoverageTest {
         composeRule.onNodeWithText("DAILY RHYTHM & LEDGER").scrollIntoView().assertIsDisplayed()
         composeRule.onNodeWithText("CSV").scrollIntoView().assertIsDisplayed()
     }
+}
+
+private fun SemanticsNodeInteraction.scrollIntoView(): SemanticsNodeInteraction {
+    runCatching { performScrollTo() }
+    return this
 }

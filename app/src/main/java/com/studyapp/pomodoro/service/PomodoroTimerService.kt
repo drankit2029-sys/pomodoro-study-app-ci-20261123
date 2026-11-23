@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.ServiceCompat
@@ -38,6 +40,11 @@ class PomodoroTimerService : Service() {
     override fun onCreate() {
         super.onCreate()
         PomodoroNotifications.createChannels(this)
+        // Satisfy the startForegroundService() contract immediately. A very short session
+        // (or a test that completes a phase instantly) can stop the service before
+        // onStartCommand is delivered; without this, Android throws
+        // ForegroundServiceDidNotStartInTimeException and kills the process.
+        promoteToForeground(engine.state.value)
         stateJob = serviceScope.launch {
             engine.state.collect { state ->
                 if (!startCommandHandled || handlingCommand) return@collect
@@ -246,6 +253,7 @@ class PomodoroTimerService : Service() {
             "com.studyapp.pomodoro.extra.STARTED_AS_FOREGROUND"
 
         private const val MAX_WAKE_LOCK_MILLIS = 2L * 60L * 60L * 1000L
+        private const val STOP_GRACE_MILLIS = 1_000L
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(
@@ -257,7 +265,22 @@ class PomodoroTimerService : Service() {
         }
 
         fun stop(context: Context) {
-            context.stopService(Intent(context, PomodoroTimerService::class.java))
+            // A startForegroundService() call is asynchronous. If a session finishes or is
+            // reset immediately after starting, stopping the service in the same main-thread
+            // turn can cancel the start before onStartCommand runs, and Android then throws
+            // ForegroundServiceDidNotStartInTimeException. Give the service a short grace
+            // window to promote itself, then stop it.
+            val appContext = context.applicationContext
+            Handler(Looper.getMainLooper()).postDelayed(
+                {
+                    runCatching {
+                        appContext.stopService(
+                            Intent(appContext, PomodoroTimerService::class.java),
+                        )
+                    }
+                },
+                STOP_GRACE_MILLIS,
+            )
         }
     }
 }

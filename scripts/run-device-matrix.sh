@@ -117,6 +117,9 @@ run_profile() {
     fi
     [ -z "$tests" ] && tests="?"
     [ -z "$failures" ] && failures="0"
+    if [ "$status" != "PASS" ]; then
+        "$ADB" -s "$serial" logcat -d -v brief > "$dir/logcat.txt" 2>&1 || true
+    fi
     printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$api" "$name" "$status" "$tests" "$failures" "$logfile" >> "$SUMMARY"
     log "API $api / $name -> $status (tests=$tests failures=$failures)"
 }
@@ -124,6 +127,10 @@ run_profile() {
 run_api() {
     local api="$1" port="$2"
     local avd="${AVD_PREFIX}${api}"
+    # API 36's k3d AVD is used by another agent; use a dedicated copy.
+    if [ "$api" = "36" ] && "$EMULATOR" -list-avds | grep -qx "study-api36"; then
+        avd="study-api36"
+    fi
     local serial="emulator-$port"
     local dir="$OUT/api$api"
     mkdir -p "$dir"
@@ -136,7 +143,7 @@ run_api() {
 
     log "Starting $avd on $serial"
     nice -n 10 "$EMULATOR" -avd "$avd" -port "$port" \
-        -no-window -no-audio -no-boot-anim -no-snapshot \
+        -no-window -no-audio -no-boot-anim -no-snapshot -read-only \
         -gpu swiftshader_indirect -camera-back none -camera-front none \
         -memory 2048 -cores 2 -no-metrics \
         > "$dir/emulator.log" 2>&1 &
