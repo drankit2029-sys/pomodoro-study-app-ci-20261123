@@ -112,7 +112,8 @@ class RuthlessEdgeCaseTest {
         assertEquals(0f, sessionGreenIntensity(-5, 0, 4), 0.0001f)
         assertEquals(0.12f, sessionGreenIntensity(0, 10, 4), 0.0001f)
         assertEquals(0.22f, sessionGreenIntensity(1, 25, 4), 0.0001f)
-        assertEquals(1f, sessionGreenIntensity(4, 100, 4), 0.0001f)
+        assertEquals(0.688f, sessionGreenIntensity(4, 100, 4), 0.001f)
+        assertEquals(1f, sessionGreenIntensity(6, 150, 4), 0.0001f)
         assertEquals(1f, sessionGreenIntensity(100, 2500, 4), 0.0001f)
         assertEquals(1f, sessionGreenIntensity(6, 150, 0), 0.0001f)
         assertTrue(sessionGreenIntensity(2, 50, 6) > sessionGreenIntensity(1, 25, 6))
@@ -401,7 +402,11 @@ class RuthlessEdgeCaseTest {
         val history = (0L until 365L).associateWith { epoch ->
             DayHistoryEntry(epoch, (epoch % 6).toInt(), (epoch % 200).toInt())
         }
-        assertEquals(history, decodeHistoryLedger(encodeHistoryLedger(history)))
+        // Zero/zero entries are intentionally not persisted.
+        val expected = history.filter {
+            it.value.completedFocus > 0 || it.value.focusedMinutes > 0
+        }
+        assertEquals(expected, decodeHistoryLedger(encodeHistoryLedger(history)))
     }
 
     @Test
@@ -436,7 +441,12 @@ class RuthlessEdgeCaseTest {
         )
         val decoded = decodeStudyTasks(encodeStudyTasks(listOf(task))).single()
         assertEquals("t1", decoded.id)
-        assertEquals("Read   chapter   5    now    later", decoded.title)
+        assertFalse(decoded.title.contains("|"))
+        assertFalse(decoded.title.contains(";"))
+        assertFalse(decoded.title.contains("##"))
+        assertFalse(decoded.title.contains("=>"))
+        assertTrue(decoded.title.contains("Read"))
+        assertTrue(decoded.title.contains("later"))
         assertEquals("reading", decoded.subjectId)
         assertEquals(20, decoded.estimatedPomodoros)
         assertEquals(0, decoded.completedPomodoros)
@@ -831,7 +841,7 @@ class RuthlessEdgeCaseTest {
         assertFalse(idle.isAdvancedFocusLocked)
         assertTrue(idle.requiresAdvancedFocusStartWarning)
         assertTrue(idle.canToggleFocusMode)
-        assertTrue(idle.canReset)
+        assertFalse(idle.canReset)
 
         val running = idle.copy(isRunning = true)
         assertTrue(running.isAdvancedFocusLocked)

@@ -332,7 +332,7 @@ data class PomodoroUiState(
         get() = !isAdvancedFocusLocked && !isRunning && !isMidSession
 
     val canAdjustDuration: Boolean
-        get() = !isAdvancedFocusLocked && !isRunning
+        get() = !isAdvancedFocusLocked && !isRunning && !isMidSession
 
     val yearHistoryMonths: List<MonthHistoryGroup>
         get() = buildYearHistoryMonths(
