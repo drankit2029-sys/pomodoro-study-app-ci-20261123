@@ -119,7 +119,7 @@ Status legend: ⏳ pending · 🟡 running · ✅ passed · ❌ failed · ⚠️
 | C2 | Device/orientation matrix | GitHub Actions | ⚠️ | 6/18 jobs green; VM matrix 39 green cells (all 12 profiles on API 26, all tablet profiles on API 28/30/33/35) |
 | D1 | Play Store screenshots | VM 4 classes | ✅ | 32 curated PNGs (8 per class), correct dimensions |
 | D2 | All-feature screenshots | VM 4 classes | ✅ | 182 PNGs (25 per profile × 6 + curated) |
-| E1 | Manual visual review | Orchestrator | ✅ | Home + tablet ledger reviewed |
+| E1 | Manual visual review | Orchestrator | ✅ | Home + tablet + desktop + XR reviewed |
 
 CI repository: <https://github.com/drankit2029-sys/pomodoro-study-app-ci-20261123>
 
@@ -203,3 +203,19 @@ scripts/capture-playstore.sh
 
 GitHub Actions workflows live in `.github/workflows/`:
 `unit-tests.yml`, `api-matrix.yml`, `device-matrix.yml`, `screenshots.yml`.
+
+
+## 9. Major release (v2.0.0 / versionCode 7) — final status
+
+| Item | Status |
+|---|---|
+| Signed release AAB + APK | ✅ `release/app-release-2.0.0.aab`, `release/app-release-2.0.0.apk` |
+| R8 mapping + metadata | ✅ `release/mapping/*`, `release/metadata/*`, `release/SHA256SUMS.txt` |
+| Production AdMob IDs in artifacts | ✅ verified in release manifest + BuildConfig (see `RELEASE_AUDIT.md`) |
+| Install on physical phone | ✅ `RZCY61Z8TPD`, v2.0.0 (7), launches, no fatal errors |
+| Play Console declarations | ✅ checklist in `RELEASE_DECLARATIONS.md` |
+| Desktop / XR compatibility | ✅ verified visually at 1920×1080 / 3840×2400, no issues found |
+| Fresh screenshots (old folder deleted) | ✅ 224 raw PNGs across 9 classes; 72 curated in `store-screenshots/playstore/` |
+| Drive upload | ✅ folder `Pomodoro 2.0.0 - Play Store Screenshots` (ID `1ZMrKOas-8VqBUaAat3LetMtdhQxrtIJN`), 9 subfolders × 8 screenshots + requirements doc |
+
+Exact screenshot specs: `PLAY_STORE_REQUIREMENTS.md`. Release notes: `RELEASE_NOTES.md`.

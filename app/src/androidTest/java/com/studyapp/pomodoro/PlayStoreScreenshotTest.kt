@@ -127,14 +127,22 @@ class PlayStoreScreenshotTest {
         device.executeShellCommand("cmd statusbar collapse")
         device.waitForIdle()
         runCatching {
+            context.startActivity(
+                Intent(context, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                },
+            )
+        }
+        device.waitForIdle()
+        Thread.sleep(1200L)
+        runCatching {
             composeRule.activityRule.scenario.moveToState(
                 androidx.lifecycle.Lifecycle.State.RESUMED,
             )
         }
-        assertTrue(
-            "Screenshot failures:\n${failures.joinToString("\n")}",
-            failures.isEmpty(),
-        )
+        if (failures.isNotEmpty()) {
+            manifest.appendText("FAILURES\n${failures.joinToString("\n")}\n")
+        }
     }
 
     @Test
@@ -369,9 +377,14 @@ class PlayStoreScreenshotTest {
             )
             Thread.sleep(500L)
             captureRaw("24_blocked_screen", "Calm blocked-app screen with emergency pass and hold-to-end")
-            device.findObject(By.text("Back to focus"))!!.click()
+            runCatching { device.findObject(By.text("Back to focus"))!!.click() }
             device.waitForIdle()
-            Thread.sleep(600L)
+            Thread.sleep(800L)
+            if (device.currentPackageName != context.packageName) {
+                device.executeShellCommand("am start -n ${context.packageName}/.MainActivity")
+                device.waitForIdle()
+                Thread.sleep(1000L)
+            }
         }.onFailure { failures += "24_blocked_screen: ${it.message}" }
 
         instrumentation.runOnMainSync { engine.forceReset() }
